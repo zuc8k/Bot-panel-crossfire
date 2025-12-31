@@ -1,57 +1,41 @@
 # services/ban_service.py
 
+from datetime import datetime
 from database.connection import cursors, connections
+from systems.ban_utils import parse_duration
 
-def get_player(ign: str):
+
+def ban_player_logic(ign: str, duration: str):
     cursor = cursors.get("CF_SA_GAME")
-    cursor.execute(
-        "SELECT USN, NICK, HOLD_TYPE FROM CF_USER WHERE NICK=? OR LOWER_NICK=?",
-        ign, ign.lower()
-    )
-    return cursor.fetchone()
+    conn = connections.get("CF_SA_GAME")
 
-def ban_player_logic(ign: str):
-    data = get_player(ign)
-    if not data:
+    if not cursor or not conn:
+        return None, "DB_ERROR"
+
+    cursor.execute(
+        "SELECT USN, HOLD_TYPE FROM CF_USER WHERE NICK = ?",
+        ign
+    )
+    row = cursor.fetchone()
+
+    if not row:
         return None, "NOT_FOUND"
 
-    usn, nick, hold = data
-    if hold == "E":
+    usn, hold_type = row
+
+    if hold_type == "E":
         return None, "ALREADY_BANNED"
 
-    cursor = cursors.get("CF_SA_GAME")
-    conn = connections.get("CF_SA_GAME")
+    release_date = parse_duration(duration)
 
     cursor.execute(
-        "UPDATE CF_USER SET HOLD_TYPE='E' WHERE USN=?",
+        "UPDATE CF_USER SET HOLD_TYPE = 'E' WHERE USN = ?",
         usn
     )
     conn.commit()
 
     return {
         "usn": usn,
-        "nick": nick
+        "nick": ign,
+        "release_date": release_date
     }, "BANNED"
-
-def unban_player_logic(ign: str):
-    data = get_player(ign)
-    if not data:
-        return None, "NOT_FOUND"
-
-    usn, nick, hold = data
-    if hold != "E":
-        return None, "NOT_BANNED"
-
-    cursor = cursors.get("CF_SA_GAME")
-    conn = connections.get("CF_SA_GAME")
-
-    cursor.execute(
-        "UPDATE CF_USER SET HOLD_TYPE='A' WHERE USN=?",
-        usn
-    )
-    conn.commit()
-
-    return {
-        "usn": usn,
-        "nick": nick
-    }, "UNBANNED"
