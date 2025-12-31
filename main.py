@@ -1,12 +1,12 @@
+import asyncio
 from core.bot import bot
 from core.checks import setup_checks
 from core.loader import load_commands
 from config.settings import TOKEN
 from database.connection import connect_all
-import asyncio
 
 if __name__ == "__main__":
-    print("🚀 Starting bot...")
+    print("🚀 Starting bot (Hybrid Mode)...")
 
     connect_all()
     setup_checks(bot)
