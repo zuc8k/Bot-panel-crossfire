@@ -1,11 +1,9 @@
 # commands/ban/ban.py
 
 from discord.ext import commands
-from datetime import datetime
-from database.connection import cursors, connections
-from systems.ban_utils import parse_duration
+from services.ban_service import ban_player_logic
 
-class BanPlayer(commands.Cog):
+class Ban(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -15,38 +13,26 @@ class BanPlayer(commands.Cog):
             await ctx.send("❌ Usage: !ban <IGN> <duration> <reason>")
             return
 
-        cursor = cursors.get("CF_SA_GAME")
-        conn = connections.get("CF_SA_GAME")
+        data, status = ban_player_logic(ign, duration)
 
-        cursor.execute(
-            "SELECT USN, HOLD_TYPE FROM CF_USER WHERE NICK=?",
-            ign
-        )
-        row = cursor.fetchone()
+        if status == "DB_ERROR":
+            await ctx.send("❌ Database connection error")
+            return
 
-        if not row:
+        if status == "NOT_FOUND":
             await ctx.send("❌ Player not found")
             return
 
-        usn, hold = row
-        if hold == "E":
+        if status == "ALREADY_BANNED":
             await ctx.send("⚠️ Player already banned")
             return
 
-        release_date = parse_duration(duration)
-
-        cursor.execute(
-            "UPDATE CF_USER SET HOLD_TYPE='E' WHERE USN=?",
-            usn
-        )
-        conn.commit()
-
         await ctx.send(
             f"🔨 Player Banned\n"
-            f"Nick: `{ign}`\n"
+            f"Nick: `{data['nick']}`\n"
             f"Duration: `{duration}`\n"
             f"Reason: {reason}"
         )
 
 async def setup(bot):
-    await bot.add_cog(BanPlayer(bot))
+    await bot.add_cog(Ban(bot))
