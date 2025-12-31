@@ -1,16 +1,18 @@
 from core.bot import bot
 from core.checks import setup_checks
+from core.loader import load_commands
 from config.settings import TOKEN
 from database.connection import connect_all
+import asyncio
 
 if __name__ == "__main__":
     print("🚀 Starting bot...")
 
-    # Connect to databases
     connect_all()
-
-    # Setup global checks (channels / allowed users / permissions)
     setup_checks(bot)
 
-    # Run bot
-    bot.run(TOKEN)
+    async def start():
+        await load_commands(bot)
+        await bot.start(TOKEN)
+
+    asyncio.run(start())
