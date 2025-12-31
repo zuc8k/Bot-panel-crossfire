@@ -25,5 +25,6 @@ def setup_checks(bot: commands.Bot):
     async def permission_check(ctx):
         if not ctx.command:
             return True
+
         rank = get_user_rank(ctx.author.id)
         return has_permission(rank, ctx.command.name)
