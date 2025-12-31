@@ -9,3 +9,8 @@ bot = commands.Bot(
     command_prefix="!",
     intents=intents
 )
+
+@bot.event
+async def on_ready():
+    print(f"✅ Bot Online as {bot.user}")
+    print(f"🆔 Bot ID: {bot.user.id}")
