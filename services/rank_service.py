@@ -1,29 +1,49 @@
 # services/rank_service.py
 
-import json
-from pathlib import Path
+from database.connection import cursors, connections
 
-RANKS_FILE = Path("data/ranks.json")
+# رتب اللعبة فقط
+VALID_GAME_RANKS = ["A", "G", "M", "N"]
 
-def load_ranks_file():
-    if not RANKS_FILE.exists():
-        return {}
-    with open(RANKS_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+def set_game_rank(ign: str, new_rank: str):
+    new_rank = new_rank.upper()
 
-def save_ranks_file(data: dict):
-    with open(RANKS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4)
+    if new_rank not in VALID_GAME_RANKS:
+        return None, "INVALID_RANK"
 
-def add_rank(user_id: int, rank: str):
-    data = load_ranks_file()
-    data[str(user_id)] = rank
-    save_ranks_file(data)
+    cursor = cursors.get("CF_SA_GAME")
+    conn = connections.get("CF_SA_GAME")
 
-def remove_rank(user_id: int):
-    data = load_ranks_file()
-    if str(user_id) in data:
-        del data[str(user_id)]
-        save_ranks_file(data)
-        return True
-    return False
+    if not cursor or not conn:
+        return None, "DB_ERROR"
+
+    cursor.execute(
+        "SELECT USN, AUTHORITY FROM CF_USER WHERE NICK = ?",
+        ign
+    )
+    row = cursor.fetchone()
+
+    if not row:
+        return None, "NOT_FOUND"
+
+    usn, old_rank = row
+
+    if old_rank == new_rank:
+        return None, "SAME_RANK"
+
+    cursor.execute(
+        """
+        UPDATE CF_USER
+        SET AUTHORITY = ?
+        WHERE USN = ?
+        """,
+        new_rank, usn
+    )
+    conn.commit()
+
+    return {
+        "usn": usn,
+        "nick": ign,
+        "old_rank": old_rank,
+        "new_rank": new_rank
+    }, "UPDATED"
