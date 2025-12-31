@@ -1,28 +1,43 @@
 # services/help_service.py
 
 from core.permissions import PERMISSIONS
-from core.ranks import RANK_NAMES
 
-def build_help_menu(user_rank: str):
-    menu = {}
+CATEGORIES = {
+    "general": {
+        "label": "📖 General",
+        "commands": ["help", "test"]
+    },
+    "account": {
+        "label": "👤 Account",
+        "commands": ["checkaccount", "changepass", "genpass", "changename"]
+    },
+    "gp": {
+        "label": "💰 GP System",
+        "commands": ["checkgp", "addgp", "gplogs"]
+    },
+    "zp": {
+        "label": "💎 ZP System",
+        "commands": ["checkzp", "addzp"]
+    },
+    "ban": {
+        "label": "🔨 Ban System",
+        "commands": ["ban", "unban", "checkhold"]
+    }
+}
 
-    for command, allowed_ranks in PERMISSIONS.items():
-        if user_rank in allowed_ranks:
-            category = get_category(command)
-            menu.setdefault(category, []).append(command)
+def get_available_categories(user_rank: str):
+    available = {}
 
-    return menu
+    for key, data in CATEGORIES.items():
+        allowed_cmds = []
+        for cmd in data["commands"]:
+            if user_rank in PERMISSIONS.get(cmd, []):
+                allowed_cmds.append(cmd)
 
+        if allowed_cmds:
+            available[key] = {
+                "label": data["label"],
+                "commands": allowed_cmds
+            }
 
-def get_category(command_name: str) -> str:
-    if command_name in ["ban", "unban", "checkhold"]:
-        return "🔨 Ban System"
-    if command_name in ["addgp", "checkgp", "gplogs"]:
-        return "💰 GP System"
-    if command_name in ["addzp", "checkzp"]:
-        return "💎 ZP System"
-    if command_name in ["changepass", "genpass", "changename", "checkaccount"]:
-        return "👤 Account"
-    if command_name in ["help", "test"]:
-        return "ℹ️ General"
-    return "📦 Other"
+    return available
