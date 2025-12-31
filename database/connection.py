@@ -1,17 +1,20 @@
 import pyodbc
-from config.database import SERVER, USERNAME, PASSWORD, DATABASES
+from config.database import DB_SERVER, DB_USER, DB_PASS, DATABASES
 
 connections = {}
 cursors = {}
 
 def connect_all():
-    for key, db in DATABASES.items():
+    print("🔌 Connecting to databases...")
+    for key, db_name in DATABASES.items():
         try:
             conn = pyodbc.connect(
                 f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-                f"SERVER={SERVER};DATABASE={db};"
-                f"UID={USERNAME};PWD={PASSWORD};"
-                "TrustServerCertificate=yes;"
+                f"SERVER={DB_SERVER};"
+                f"DATABASE={db_name};"
+                f"UID={DB_USER};"
+                f"PWD={DB_PASS};"
+                f"TrustServerCertificate=yes;"
             )
             connections[key] = conn
             cursors[key] = conn.cursor()
@@ -19,6 +22,4 @@ def connect_all():
         except Exception as e:
             connections[key] = None
             cursors[key] = None
-            print(f"❌ DB Error {key}: {e}")
-
-connect_all()
+            print(f"❌ Failed {key}: {e}")
