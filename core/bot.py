@@ -1,5 +1,3 @@
-# core/bot.py
-
 import discord
 from discord.ext import commands
 from core.ranks import load_ranks
@@ -12,7 +10,8 @@ intents.members = True
 # ================== BOT ==================
 bot = commands.Bot(
     command_prefix="!",
-    intents=intents
+    intents=intents,
+    help_command=None  # ❌ تعطيل الـ Default Help نهائيًا
 )
 
 # ================== EVENTS ==================
