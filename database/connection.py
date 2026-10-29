@@ -1,19 +1,22 @@
+# database/connection.py
 import pyodbc
-from config.database import DB_SERVER, DB_USER, DB_PASS, DATABASES
+from config.settings import DATABASES
 
-connections = {}
-cursors = {}
+connections: dict[str, pyodbc.Connection | None] = {}
+cursors: dict[str, pyodbc.Cursor | None] = {}
 
-def connect_all():
+
+def connect_all() -> None:
+    """تهيئة الاتصال بجميع قواعد البيانات المحددة في الإعدادات."""
     print("🔌 Connecting to databases...")
-    for key, db_name in DATABASES.items():
+    for key, cfg in DATABASES.items():
         try:
             conn = pyodbc.connect(
                 f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-                f"SERVER={DB_SERVER};"
-                f"DATABASE={db_name};"
-                f"UID={DB_USER};"
-                f"PWD={DB_PASS};"
+                f"SERVER={cfg['host']};"
+                f"DATABASE={cfg['db']};"
+                f"UID={cfg['user']};"
+                f"PWD={cfg['password']};"
                 f"TrustServerCertificate=yes;"
             )
             connections[key] = conn
@@ -23,3 +26,14 @@ def connect_all():
             connections[key] = None
             cursors[key] = None
             print(f"❌ Failed {key}: {e}")
+
+
+def close_all() -> None:
+    """إغلاق جميع الاتصالات بأمان (يُستدعى عند إيقاف البوت)."""
+    for key, conn in connections.items():
+        if conn:
+            try:
+                conn.close()
+                print(f"🔒 Closed connection: {key}")
+            except Exception as e:
+                print(f"⚠️ Error closing {key}: {e}")
